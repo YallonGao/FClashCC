@@ -48,6 +48,19 @@ jobs:
         with:
           submodules: recursive
 
+      # Without this the release falls back to the debug key, which a fresh
+      # runner regenerates every build: the package id drops to .dev and no
+      # build can install over the previous one.
+      - name: Setup Android signing
+        if: matrix.platform == 'android'
+        run: |
+          echo "${{ secrets.KEYSTORE }}" | base64 --decode > android/app/keystore.jks
+          {
+            echo "keyAlias=${{ secrets.KEY_ALIAS }}"
+            echo "storePassword=${{ secrets.STORE_PASSWORD }}"
+            echo "keyPassword=${{ secrets.KEY_PASSWORD }}"
+          } >> android/local.properties
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
