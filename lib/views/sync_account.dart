@@ -145,7 +145,7 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
     super.dispose();
   }
 
-  void _submit({required bool register}) {
+  void _submit() {
     final appLocalizations = context.appLocalizations;
     final server = _serverController.text.trim();
     final account = _accountController.text.trim();
@@ -165,12 +165,7 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
     unawaited(
       ref
           .read(syncProvider.notifier)
-          .signIn(
-            baseUrl: server,
-            username: account,
-            password: password,
-            register: register,
-          ),
+          .signIn(baseUrl: server, username: account, password: password),
     );
   }
 
@@ -225,7 +220,7 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
                 inputFormatters: TextInputLimits.limit(
                   TextInputLimits.password,
                 ),
-                onFieldSubmitted: (_) => _submit(register: false),
+                onFieldSubmitted: (_) => _submit(),
               ),
             ),
           ],
@@ -235,12 +230,7 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
             FormRow(
               leading: const GlyphIcon(AppGlyphs.cloudSync),
               title: appLocalizations.syncSignIn,
-              onPressed: busy ? null : () => _submit(register: false),
-            ),
-            FormRow(
-              leading: const GlyphIcon(AppGlyphs.account),
-              title: appLocalizations.syncSignUp,
-              onPressed: busy ? null : () => _submit(register: true),
+              onPressed: busy ? null : _submit,
             ),
           ],
         ),
@@ -253,7 +243,6 @@ String _failureText(AppLocalizations appLocalizations, String failure) {
   return switch (failure) {
     'offline' => appLocalizations.syncOffline,
     'unauthorized' || 'invalidCredentials' => appLocalizations.syncSignIn,
-    'registrationClosed' || 'usernameTaken' => appLocalizations.syncSignUp,
     _ => appLocalizations.error,
   };
 }

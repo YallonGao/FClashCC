@@ -60,7 +60,6 @@ class SyncNotifier extends Notifier<SyncState> {
     required String baseUrl,
     required String username,
     required String password,
-    required bool register,
   }) async {
     if (state.busy) return;
     state = state.copyWith(busy: true, clearError: true, clearConflict: true);
@@ -70,7 +69,7 @@ class SyncNotifier extends Notifier<SyncState> {
       final auth = await client.authenticate(
         username: username,
         password: password,
-        register: register,
+        register: false,
         deviceKey: deviceKey,
         deviceName: _deviceName,
         platform: Platform.operatingSystem,
