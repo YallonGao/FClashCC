@@ -2036,15 +2036,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "syncNever": MessageLookupByLibrary.simpleMessage("Never"),
     "syncNow": MessageLookupByLibrary.simpleMessage("Sync now"),
     "syncOffline": MessageLookupByLibrary.simpleMessage("Offline, read-only"),
+    "syncReachable": MessageLookupByLibrary.simpleMessage("Server reachable"),
     "syncReadOnly": MessageLookupByLibrary.simpleMessage(
       "Offline: configuration is read-only",
     ),
+    "syncReconnect": MessageLookupByLibrary.simpleMessage("Reconnect"),
     "syncRevision": MessageLookupByLibrary.simpleMessage("Version"),
     "syncServer": MessageLookupByLibrary.simpleMessage("Server address"),
     "syncSignIn": MessageLookupByLibrary.simpleMessage("Sign in"),
     "syncSignOut": MessageLookupByLibrary.simpleMessage("Sign out"),
     "syncSignUp": MessageLookupByLibrary.simpleMessage("Create account"),
     "syncStatus": MessageLookupByLibrary.simpleMessage("Sync status"),
+    "syncTestConnection": MessageLookupByLibrary.simpleMessage(
+      "Test connection",
+    ),
+    "syncUnreachable": MessageLookupByLibrary.simpleMessage(
+      "Cannot reach the server. Check the address, port and firewall.",
+    ),
     "syncUseRemote": MessageLookupByLibrary.simpleMessage("Use server copy"),
     "system": MessageLookupByLibrary.simpleMessage("System"),
     "systemApp": MessageLookupByLibrary.simpleMessage("System apps"),

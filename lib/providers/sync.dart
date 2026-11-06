@@ -56,6 +56,15 @@ class SyncNotifier extends Notifier<SyncState> {
     }
   }
 
+  Future<bool> testConnection(String baseUrl) async {
+    final client = SyncClient(baseUrl: baseUrl);
+    try {
+      return await client.ping();
+    } finally {
+      client.close();
+    }
+  }
+
   Future<void> signIn({
     required String baseUrl,
     required String username,

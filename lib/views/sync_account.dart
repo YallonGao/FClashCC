@@ -55,6 +55,11 @@ class SyncAccountView extends ConsumerWidget {
               title: appLocalizations.syncReadOnly,
               titleStyle: TextStyle(color: context.colorScheme.error),
             ),
+            FormRow(
+              leading: const GlyphIcon(AppGlyphs.connections),
+              title: appLocalizations.syncReconnect,
+              onPressed: state.busy ? null : action.refreshRemoteState,
+            ),
           ],
         ),
       generateSection(
@@ -169,6 +174,31 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
     );
   }
 
+  Future<void> _test() async {
+    final server = _serverController.text.trim();
+    final appLocalizations = context.appLocalizations;
+    if (server.isEmpty) {
+      setState(
+        () => _issue = appLocalizations.emptyTip(appLocalizations.syncServer),
+      );
+      return;
+    }
+    final reachable = await ref
+        .read(syncProvider.notifier)
+        .testConnection(server);
+    if (!mounted) return;
+    unawaited(
+      dialogs.showAlert(
+        title: appLocalizations.syncTestConnection,
+        message: TextSpan(
+          text: reachable
+              ? appLocalizations.syncReachable
+              : appLocalizations.syncUnreachable,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appLocalizations = context.appLocalizations;
@@ -227,6 +257,11 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
         ),
         generateSection(
           items: [
+            FormRow(
+              leading: const GlyphIcon(AppGlyphs.connections),
+              title: appLocalizations.syncTestConnection,
+              onPressed: busy ? null : _test,
+            ),
             FormRow(
               leading: const GlyphIcon(AppGlyphs.cloudSync),
               title: appLocalizations.syncSignIn,

@@ -249,6 +249,16 @@ class SyncClient {
     return int.tryParse(response.headers.value('X-Revision') ?? '') ?? 0;
   }
 
+  /// Health probe used by the settings page; no token involved.
+  Future<bool> ping() async {
+    try {
+      final response = await _dio.get<dynamic>('/healthz');
+      return response.statusCode == 200;
+    } on DioException {
+      return false;
+    }
+  }
+
   void close() {
     _dio.close(force: true);
   }

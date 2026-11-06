@@ -1094,5 +1094,9 @@
   "syncKeepLocal": "保留本机",
   "syncUseRemote": "使用云端",
   "syncReadOnly": "离线状态：配置只读",
-  "syncRevision": "版本"
+  "syncRevision": "版本",
+  "syncTestConnection": "测试连接",
+  "syncReachable": "服务器可达",
+  "syncUnreachable": "连不上服务器，检查地址、端口和防火墙",
+  "syncReconnect": "重新连接"
 }

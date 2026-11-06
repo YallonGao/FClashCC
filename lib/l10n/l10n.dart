@@ -9206,6 +9206,41 @@ class AppLocalizations {
   String get syncRevision {
     return Intl.message('Version', name: 'syncRevision', desc: '', args: []);
   }
+
+  /// `Test connection`
+  String get syncTestConnection {
+    return Intl.message(
+      'Test connection',
+      name: 'syncTestConnection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Server reachable`
+  String get syncReachable {
+    return Intl.message(
+      'Server reachable',
+      name: 'syncReachable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cannot reach the server. Check the address, port and firewall.`
+  String get syncUnreachable {
+    return Intl.message(
+      'Cannot reach the server. Check the address, port and firewall.',
+      name: 'syncUnreachable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reconnect`
+  String get syncReconnect {
+    return Intl.message('Reconnect', name: 'syncReconnect', desc: '', args: []);
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {
