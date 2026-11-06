@@ -202,6 +202,7 @@ class Profiles extends _$Profiles {
 
   /// A new provider label follows into custom profiles whatever path set it.
   void put(Profile profile) {
+    if (!SyncGuard.allow()) return;
     final newProfile = labeled(profile);
     final previous = state.getProfile(profile.id);
     final previousLabel = previous?.realLabel;
@@ -252,6 +253,7 @@ class Profiles extends _$Profiles {
   Future<void> rewriteCustom(
     Future<Map<int, Profile Function(Profile profile)>> Function() body,
   ) {
+    if (!SyncGuard.allow()) return Future.value();
     return _writes.track(() async {
       (List<Profile>, List<Profile>)? applied;
       try {
@@ -294,6 +296,7 @@ class Profiles extends _$Profiles {
   }
 
   Future<void> del(int id) {
+    if (!SyncGuard.allow()) return Future.value();
     return _optimisticAsync(
       state.where((e) => e.id != id).toList(),
       () => _serial(() => database.deleteProfile(id)),
@@ -301,6 +304,7 @@ class Profiles extends _$Profiles {
   }
 
   void updateProfile(int profileId, Profile Function(Profile profile) builder) {
+    if (!SyncGuard.allow()) return;
     final index = state.indexWhere((element) => element.id == profileId);
     if (index == -1) return;
     final newProfile = builder(state[index]);

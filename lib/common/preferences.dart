@@ -77,6 +77,34 @@ class Preferences {
     }
   }
 
+  Future<Map<String, Object?>?> getSyncSessionMap() async {
+    final preferences = await _store.value;
+    return SyncSession.decode(preferences?.getString(syncSessionKey));
+  }
+
+  Future<void> saveSyncSessionMap(Map<String, Object?> map) async {
+    final preferences = await _store.value;
+    await preferences?.setString(syncSessionKey, json.encode(map));
+  }
+
+  Future<void> clearSyncSession() async {
+    final preferences = await _store.value;
+    await preferences?.remove(syncSessionKey);
+  }
+
+  /// Stable per-install identity. The server keys a device row on it, so a
+  /// second login updates that row instead of adding another device.
+  Future<String> getOrCreateSyncDeviceKey() async {
+    final preferences = await _store.value;
+    final existing = preferences?.getString(syncDeviceKey);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+    final key = '${snowflake.id}${DateTime.now().millisecondsSinceEpoch}';
+    await preferences?.setString(syncDeviceKey, key);
+    return key;
+  }
+
   Future<Map<String, Object?>?> getConfigMap() async {
     try {
       final preferences = await _store.value;

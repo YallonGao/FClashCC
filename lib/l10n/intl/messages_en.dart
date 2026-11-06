@@ -1048,9 +1048,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "installCertificateSuccess": MessageLookupByLibrary.simpleMessage(
       "Certificate installed",
     ),
-    "installedAppsPermissionDeniedMessage": MessageLookupByLibrary.simpleMessage(
-      "The app list permission was denied, so installed apps cannot be listed. Please grant it manually in system settings.",
-    ),
+    "installedAppsPermissionDeniedMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "The app list permission was denied, so installed apps cannot be listed. Please grant it manually in system settings.",
+        ),
     "installedAppsPermissionDesc": MessageLookupByLibrary.simpleMessage(
       "This system hides the installed app list until the permission is granted. Authorize it to configure the per-app proxy.",
     ),
@@ -2023,6 +2024,28 @@ class MessageLookup extends MessageLookupByLibrary {
     "suspended": MessageLookupByLibrary.simpleMessage("Suspended…"),
     "switchProfile": MessageLookupByLibrary.simpleMessage("Switch profile"),
     "sync": MessageLookupByLibrary.simpleMessage("Sync"),
+    "syncAndAccount": MessageLookupByLibrary.simpleMessage("Account & sync"),
+    "syncConflict": MessageLookupByLibrary.simpleMessage("Sync conflict"),
+    "syncConflictDesc": MessageLookupByLibrary.simpleMessage(
+      "Another device changed the configuration. Choose which copy to keep.",
+    ),
+    "syncConnected": MessageLookupByLibrary.simpleMessage("Connected"),
+    "syncDevice": MessageLookupByLibrary.simpleMessage("This device"),
+    "syncKeepLocal": MessageLookupByLibrary.simpleMessage("Keep this device"),
+    "syncLastSync": MessageLookupByLibrary.simpleMessage("Last sync"),
+    "syncNever": MessageLookupByLibrary.simpleMessage("Never"),
+    "syncNow": MessageLookupByLibrary.simpleMessage("Sync now"),
+    "syncOffline": MessageLookupByLibrary.simpleMessage("Offline, read-only"),
+    "syncReadOnly": MessageLookupByLibrary.simpleMessage(
+      "Offline: configuration is read-only",
+    ),
+    "syncRevision": MessageLookupByLibrary.simpleMessage("Version"),
+    "syncServer": MessageLookupByLibrary.simpleMessage("Server address"),
+    "syncSignIn": MessageLookupByLibrary.simpleMessage("Sign in"),
+    "syncSignOut": MessageLookupByLibrary.simpleMessage("Sign out"),
+    "syncSignUp": MessageLookupByLibrary.simpleMessage("Create account"),
+    "syncStatus": MessageLookupByLibrary.simpleMessage("Sync status"),
+    "syncUseRemote": MessageLookupByLibrary.simpleMessage("Use server copy"),
     "system": MessageLookupByLibrary.simpleMessage("System"),
     "systemApp": MessageLookupByLibrary.simpleMessage("System apps"),
     "systemProxy": MessageLookupByLibrary.simpleMessage("System proxy"),

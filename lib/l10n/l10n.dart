@@ -7663,8 +7663,7 @@ class AppLocalizations {
   String customImportDroppedSubRules(num count, Object label) {
     return Intl.plural(
       count,
-      one:
-          '1 SUB-RULE rule was dropped, since custom profiles do not support sub-rules',
+      one: '1 SUB-RULE rule was dropped, since custom profiles do not support sub-rules',
       other:
           '$label SUB-RULE rules were dropped, since custom profiles do not support sub-rules',
       name: 'customImportDroppedSubRules',
@@ -9071,6 +9070,141 @@ class AppLocalizations {
       desc: '',
       args: [],
     );
+  }
+
+  /// `Account & sync`
+  String get syncAndAccount {
+    return Intl.message(
+      'Account & sync',
+      name: 'syncAndAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Server address`
+  String get syncServer {
+    return Intl.message(
+      'Server address',
+      name: 'syncServer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign in`
+  String get syncSignIn {
+    return Intl.message('Sign in', name: 'syncSignIn', desc: '', args: []);
+  }
+
+  /// `Create account`
+  String get syncSignUp {
+    return Intl.message(
+      'Create account',
+      name: 'syncSignUp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign out`
+  String get syncSignOut {
+    return Intl.message('Sign out', name: 'syncSignOut', desc: '', args: []);
+  }
+
+  /// `Sync now`
+  String get syncNow {
+    return Intl.message('Sync now', name: 'syncNow', desc: '', args: []);
+  }
+
+  /// `Sync status`
+  String get syncStatus {
+    return Intl.message('Sync status', name: 'syncStatus', desc: '', args: []);
+  }
+
+  /// `Connected`
+  String get syncConnected {
+    return Intl.message('Connected', name: 'syncConnected', desc: '', args: []);
+  }
+
+  /// `Offline, read-only`
+  String get syncOffline {
+    return Intl.message(
+      'Offline, read-only',
+      name: 'syncOffline',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last sync`
+  String get syncLastSync {
+    return Intl.message('Last sync', name: 'syncLastSync', desc: '', args: []);
+  }
+
+  /// `Never`
+  String get syncNever {
+    return Intl.message('Never', name: 'syncNever', desc: '', args: []);
+  }
+
+  /// `This device`
+  String get syncDevice {
+    return Intl.message('This device', name: 'syncDevice', desc: '', args: []);
+  }
+
+  /// `Sync conflict`
+  String get syncConflict {
+    return Intl.message(
+      'Sync conflict',
+      name: 'syncConflict',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Another device changed the configuration. Choose which copy to keep.`
+  String get syncConflictDesc {
+    return Intl.message(
+      'Another device changed the configuration. Choose which copy to keep.',
+      name: 'syncConflictDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Keep this device`
+  String get syncKeepLocal {
+    return Intl.message(
+      'Keep this device',
+      name: 'syncKeepLocal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use server copy`
+  String get syncUseRemote {
+    return Intl.message(
+      'Use server copy',
+      name: 'syncUseRemote',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Offline: configuration is read-only`
+  String get syncReadOnly {
+    return Intl.message(
+      'Offline: configuration is read-only',
+      name: 'syncReadOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Version`
+  String get syncRevision {
+    return Intl.message('Version', name: 'syncRevision', desc: '', args: []);
   }
 }
 
