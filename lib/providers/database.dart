@@ -201,8 +201,8 @@ class Profiles extends _$Profiles {
   Profile labeled(Profile profile) => state.optimizeLabel(profile);
 
   /// A new provider label follows into custom profiles whatever path set it.
-  void put(Profile profile) {
-    if (!SyncGuard.allow()) return;
+  void put(Profile profile, {bool force = false}) {
+    if (!force && !SyncGuard.allow()) return;
     final newProfile = labeled(profile);
     final previous = state.getProfile(profile.id);
     final previousLabel = previous?.realLabel;
@@ -295,8 +295,8 @@ class Profiles extends _$Profiles {
     });
   }
 
-  Future<void> del(int id) {
-    if (!SyncGuard.allow()) return Future.value();
+  Future<void> del(int id, {bool force = false}) {
+    if (!force && !SyncGuard.allow()) return Future.value();
     return _optimisticAsync(
       state.where((e) => e.id != id).toList(),
       () => _serial(() => database.deleteProfile(id)),

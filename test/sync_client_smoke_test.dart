@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:fl_clash/common/profile_sync.dart';
 import 'package:fl_clash/common/sync_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -71,5 +73,60 @@ void main() {
 
     client.close();
     dir.deleteSync(recursive: true);
+  }, skip: skip);
+
+  test('profile sync keeps add, edit and delete in step', () async {
+    final client = SyncClient(baseUrl: baseUrl);
+    final auth = await client.authenticate(
+      username: 'profiles_${DateTime.now().microsecondsSinceEpoch}',
+      password: 'password123',
+      register: true,
+      deviceKey: 'device-profiles-01',
+      deviceName: 'smoke',
+      platform: 'windows',
+    );
+
+    SyncProfile make(String id, {String yaml = 'proxies: []'}) => SyncProfile(
+      id: id,
+      label: 'Airport $id',
+      url: 'https://sub.example.com/$id',
+      type: 'url',
+      content: utf8.encode(yaml),
+    );
+
+    final first = await client.pushProfiles(
+      token: auth.accessToken,
+      since: 0,
+      upserts: [make('1'), make('2')],
+      deletes: const [],
+    );
+    expect(first.profiles.map((p) => p.id), containsAll(['1', '2']));
+    expect(first.tombstones, isEmpty);
+
+    // A second device joins and sees the same rows.
+    final other = await client.pullProfiles(auth.accessToken, 0);
+    expect(other.profiles.length, 2);
+    expect(utf8.decode(other.profiles.first.content), 'proxies: []');
+
+    // Deleting one publishes a tombstone instead of resurrecting later.
+    final removed = await client.pushProfiles(
+      token: auth.accessToken,
+      since: first.revision,
+      upserts: const [],
+      deletes: const ['2'],
+    );
+    expect(removed.tombstones, contains('2'));
+
+    // Re-adding the same content is a no-op for the server.
+    final idle = await client.pushProfiles(
+      token: auth.accessToken,
+      since: removed.revision,
+      upserts: [make('1')],
+      deletes: const [],
+    );
+    expect(idle.revision, removed.revision);
+    expect(idle.profiles, isEmpty);
+
+    client.close();
   }, skip: skip);
 }

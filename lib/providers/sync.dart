@@ -4,39 +4,39 @@ import 'dart:io';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
-import 'package:fl_clash/providers/action.dart';
 import 'package:fl_clash/providers/database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The account, the connection to its server, and the revision both sides
-/// agree on.
+/// Keeps this device's subscriptions in step with the account on the server.
 ///
-/// Auto-push is driven from a listener on [profilesProvider] rather than from
-/// each action: every profile mutation already lands there, including the ones
-/// the editor and the proxy list make, so one listener covers them all.
+/// The unit is one subscription, not one archive: every device sends the rows
+/// it added or changed and the ids it removed, and applies whatever the server
+/// has seen since its last revision. A delete travels as a tombstone, so the
+/// next device that syncs removes the row instead of pushing it back.
 final syncProvider = NotifierProvider<SyncNotifier, SyncState>(
   SyncNotifier.new,
 );
 
 class SyncNotifier extends Notifier<SyncState> {
-  static const pushDebounce = Duration(seconds: 4);
+  static const debounce = Duration(seconds: 3);
   static const heartbeatInterval = Duration(minutes: 2);
 
-  Timer? _pushTimer;
+  Timer? _debounceTimer;
   Timer? _heartbeat;
   SyncClient? _client;
   bool _applyingRemote = false;
+  bool _syncing = false;
 
   @override
   SyncState build() {
     ref.onDispose(() {
-      _pushTimer?.cancel();
+      _debounceTimer?.cancel();
       _heartbeat?.cancel();
       _client?.close();
     });
     ref.listen(profilesProvider, (previous, next) {
       if (previous == null || _applyingRemote) return;
-      _schedulePush();
+      _scheduleSync();
     });
     unawaited(_restore());
     return const SyncState();
@@ -47,21 +47,72 @@ class SyncNotifier extends Notifier<SyncState> {
     if (session == null) return;
     _client = SyncClient(baseUrl: session.baseUrl);
     state = state.copyWith(session: session);
-    // Until the server answers, the account is treated as offline: a stale
-    // local edit is worse than a rejected one.
+    // Until the server answers, a local edit could be one the other devices
+    // never see, so the gate starts closed.
     SyncGuard.setReadOnly(true);
-    await refreshRemoteState();
+    await syncNow();
     if (state.session != null) {
       _startHeartbeat();
     }
   }
 
-  Future<bool> testConnection(String baseUrl) async {
-    final client = SyncClient(baseUrl: baseUrl);
+  /// The reconnect action on the settings page.
+  Future<void> refreshRemoteState() => syncNow();
+
+  /// One pass in both directions.
+  ///
+  /// The local diff is computed and sent before anything from the server is
+  /// applied: pulling first would overwrite an edit made while offline, and
+  /// the diff that follows would then be empty, losing it for good. The push
+  /// response already carries everything changed since our revision, so one
+  /// call is enough when there is something to send.
+  Future<void> syncNow() async {
+    final session = state.session;
+    if (session == null || _client == null || _syncing) return;
+    _syncing = true;
+    state = state.copyWith(busy: true, clearError: true);
     try {
-      return await client.ping();
+      final local = await _collectLocal();
+      final snapshot = await preferences.getSyncSnapshot();
+      final plan = planProfileSync(local: local, snapshot: snapshot);
+
+      final result = plan.isEmpty
+          ? await _withAuth(
+              (token) => _client!.pullProfiles(token, session.revision),
+            )
+          : await _withAuth(
+              (token) => _client!.pushProfiles(
+                token: token,
+                since: session.revision,
+                upserts: plan.upserts,
+                deletes: plan.deletes,
+              ),
+            );
+
+      _applyingRemote = true;
+      try {
+        await _applyRemote(result);
+      } finally {
+        _applyingRemote = false;
+      }
+
+      final merged = await _collectLocal();
+      await preferences.saveSyncSnapshot(snapshotOf(merged.values));
+      await _saveSession(
+        state.session!.copyWith(
+          revision: result.revision,
+          lastSyncAt: DateTime.now(),
+        ),
+      );
+      state = state.copyWith(busy: false, online: true, clearError: true);
+      SyncGuard.setReadOnly(false);
+    } on SyncException catch (error) {
+      state = state.copyWith(busy: false);
+      _handleFailure(error);
+    } catch (error) {
+      state = state.copyWith(busy: false, error: compactError(error));
     } finally {
-      client.close();
+      _syncing = false;
     }
   }
 
@@ -71,7 +122,7 @@ class SyncNotifier extends Notifier<SyncState> {
     required String password,
   }) async {
     if (state.busy) return;
-    state = state.copyWith(busy: true, clearError: true, clearConflict: true);
+    state = state.copyWith(busy: true, clearError: true);
     final deviceKey = await preferences.getOrCreateSyncDeviceKey();
     final client = SyncClient(baseUrl: baseUrl);
     try {
@@ -95,15 +146,13 @@ class SyncNotifier extends Notifier<SyncState> {
         refreshToken: auth.refreshToken,
       );
       await _saveSession(session);
-      state = state.copyWith(
-        session: session,
-        busy: false,
-        online: true,
-        clearError: true,
-      );
+      await preferences.clearSyncSnapshot();
+      state = state.copyWith(session: session, busy: false, online: true);
       SyncGuard.setReadOnly(false);
       _startHeartbeat();
-      unawaited(_adoptRemote(session));
+      // A fresh login merges whatever this device already had with the
+      // account's copy: nothing local is dropped on the way in.
+      await syncNow();
     } on SyncException catch (error) {
       client.close();
       state = state.copyWith(
@@ -115,162 +164,101 @@ class SyncNotifier extends Notifier<SyncState> {
     }
   }
 
-  /// A new device takes the server's copy when there is one, and seeds the
-  /// server with its own when there is not.
-  Future<void> _adoptRemote(SyncSession session) async {
-    final remote = await _guard(
-      () => _withAuth((token) => _client!.state(token)),
-    );
-    if (remote == null) return;
-    state = state.copyWith(remoteRevision: remote.revision);
-    if (remote.revision == 0) {
-      await push();
-      return;
-    }
-    await pull();
-  }
-
   Future<void> signOut() async {
-    _pushTimer?.cancel();
+    _debounceTimer?.cancel();
     _heartbeat?.cancel();
     _client?.close();
     _client = null;
     await preferences.clearSyncSession();
+    await preferences.clearSyncSnapshot();
     SyncGuard.setReadOnly(false);
     state = const SyncState();
   }
 
-  Future<void> refreshRemoteState() async {
-    final session = state.session;
-    if (session == null || _client == null) return;
+  Future<bool> testConnection(String baseUrl) async {
+    final client = SyncClient(baseUrl: baseUrl);
     try {
-      final remote = await _withAuth((token) => _client!.state(token));
-      state = state.copyWith(
-        online: true,
-        remoteRevision: remote.revision,
-        clearError: true,
-      );
-      SyncGuard.setReadOnly(false);
-    } on SyncException catch (error) {
-      _handleFailure(error);
-    }
-  }
-
-  Future<void> push({bool force = false}) async {
-    final session = state.session;
-    if (session == null || _client == null) return;
-    if (state.busy || (state.conflict != null && !force)) return;
-    state = state.copyWith(busy: true);
-    final base = force
-        ? (state.remoteRevision ?? session.revision)
-        : session.revision;
-    try {
-      await ref.read(backupActionProvider.notifier).backup((archivePath) async {
-        final bytes = await File(archivePath).readAsBytes();
-        final result = await _withAuth(
-          (token) =>
-              _client!.upload(token: token, bytes: bytes, baseRevision: base),
-        );
-        await _saveSession(
-          state.session!.copyWith(
-            revision: result.revision,
-            lastSyncAt: DateTime.now(),
-          ),
-        );
-        state = state.copyWith(
-          busy: false,
-          online: true,
-          remoteRevision: result.revision,
-          clearConflict: true,
-          clearError: true,
-        );
-        return true;
-      });
-    } on SyncException catch (error) {
-      state = state.copyWith(busy: false);
-      _handleFailure(error, baseRevision: base);
-    } catch (error) {
-      state = state.copyWith(busy: false, error: compactError(error));
-    }
-  }
-
-  Future<void> pull() async {
-    final session = state.session;
-    if (session == null || _client == null || state.busy) return;
-    state = state.copyWith(busy: true, clearConflict: true, clearError: true);
-    var revision = session.revision;
-    _applyingRemote = true;
-    try {
-      await ref.read(backupActionProvider.notifier).restore(RestoreOption.all, (
-        downloadPath,
-      ) async {
-        revision = await _withAuth(
-          (token) =>
-              _client!.download(token: token, destinationPath: downloadPath),
-        );
-        return downloadPath;
-      });
-      await _saveSession(
-        state.session!.copyWith(revision: revision, lastSyncAt: DateTime.now()),
-      );
-      state = state.copyWith(
-        busy: false,
-        online: true,
-        remoteRevision: revision,
-        clearConflict: true,
-        clearError: true,
-      );
-      SyncGuard.setReadOnly(false);
-    } on SyncException catch (error) {
-      state = state.copyWith(busy: false);
-      _handleFailure(error);
-    } catch (error) {
-      state = state.copyWith(busy: false, error: compactError(error));
+      return await client.ping();
     } finally {
-      _applyingRemote = false;
+      client.close();
     }
   }
 
-  /// Keeps this device's copy and overwrites the server's.
-  Future<void> useLocal() => push(force: true);
-
-  Future<void> useRemote() => pull();
-
-  void _schedulePush() {
-    if (!state.isSignedIn || state.conflict != null || _applyingRemote) return;
-    _pushTimer?.cancel();
-    _pushTimer = Timer(pushDebounce, () {
-      if (state.online) {
-        unawaited(push());
+  Future<void> _applyRemote(ProfileSyncResult result) async {
+    final profiles = ref.read(profilesProvider.notifier);
+    for (final id in result.tombstones) {
+      final profileId = int.tryParse(id);
+      if (profileId == null) continue;
+      if (ref.read(profilesProvider).getProfile(profileId) != null) {
+        await profiles.del(profileId, force: true);
       }
+    }
+    for (final remote in result.profiles) {
+      final profileId = int.tryParse(remote.id);
+      if (profileId == null) continue;
+      if (remote.content.isNotEmpty) {
+        final path = await appPath.getProfilePath(remote.id);
+        await File(path).safeWriteAsBytes(remote.content);
+      }
+      final type = ProfileType.values.firstWhere(
+        (value) => value.name == remote.type,
+        orElse: () => ProfileType.file,
+      );
+      final existing = ref.read(profilesProvider).getProfile(profileId);
+      final next =
+          (existing ??
+                  Profile(
+                    id: profileId,
+                    type: type,
+                    autoUpdateDuration: defaultUpdateDuration,
+                    lastUpdateDate: DateTime.now(),
+                  ))
+              .copyWith(label: remote.label, url: remote.url, type: type);
+      profiles.put(next, force: true);
+    }
+  }
+
+  /// Only subscriptions can travel; a custom profile is compiled from the
+  /// rules and proxies that live in this device's database.
+  Future<Map<String, SyncProfile>> _collectLocal() async {
+    final collected = <String, SyncProfile>{};
+    for (final profile in ref.read(profilesProvider)) {
+      if (profile.type == ProfileType.custom) continue;
+      final path = await appPath.getProfilePath('${profile.id}');
+      final file = File(path);
+      final content = await file.exists() ? await file.readAsBytes() : <int>[];
+      collected['${profile.id}'] = SyncProfile(
+        id: '${profile.id}',
+        label: profile.label,
+        url: profile.url,
+        type: profile.type.name,
+        content: content,
+      );
+    }
+    return collected;
+  }
+
+  void _scheduleSync() {
+    if (!state.isSignedIn) return;
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(debounce, () {
+      unawaited(syncNow());
     });
   }
 
   void _startHeartbeat() {
     _heartbeat?.cancel();
     _heartbeat = Timer.periodic(heartbeatInterval, (_) {
-      unawaited(refreshRemoteState());
+      unawaited(syncNow());
     });
   }
 
-  void _handleFailure(SyncException error, {int? baseRevision}) {
+  void _handleFailure(SyncException error) {
     switch (error.failure) {
       case SyncFailure.offline:
         state = state.copyWith(online: false, error: error.failure.name);
         SyncGuard.setReadOnly(true);
-      case SyncFailure.conflict:
-        state = state.copyWith(
-          online: true,
-          conflict: SyncConflict(
-            remoteRevision: error.remoteRevision ?? 0,
-            localRevision: baseRevision ?? state.session?.revision ?? 0,
-            remoteChecksum: error.remoteChecksum ?? '',
-          ),
-          clearError: true,
-        );
       case SyncFailure.unauthorized:
-        // The refresh token is dead too. Keep the account so the address and
-        // user name survive, but stay read-only until it signs in again.
         state = state.copyWith(online: false, error: error.failure.name);
         SyncGuard.setReadOnly(true);
       default:
@@ -296,15 +284,6 @@ class SyncNotifier extends Notifier<SyncState> {
         ),
       );
       return run(refreshed.accessToken);
-    }
-  }
-
-  Future<T?> _guard<T>(Future<T> Function() run) async {
-    try {
-      return await run();
-    } on SyncException catch (error) {
-      _handleFailure(error);
-      return null;
     }
   }
 

@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:fl_clash/common/profile_sync.dart';
+import 'package:fl_clash/models/sync_profiles.dart';
 
 /// What went wrong, in terms the UI can act on.
 enum SyncFailure {
@@ -247,6 +250,55 @@ class SyncClient {
     }
     await File(destinationPath).writeAsBytes(bytes, flush: true);
     return int.tryParse(response.headers.value('X-Revision') ?? '') ?? 0;
+  }
+
+  Future<ProfileSyncResult> pullProfiles(String token, int since) async {
+    final response = await _send(
+      () => _dio.get<Map<String, Object?>>(
+        '$_api/sync/profiles',
+        queryParameters: {'since': since},
+        options: Options(headers: _headers(token)),
+      ),
+    );
+    final result = ProfileSyncResult.fromJson(response.data);
+    if (result == null) {
+      throw const SyncException(SyncFailure.invalidResponse);
+    }
+    return result;
+  }
+
+  Future<ProfileSyncResult> pushProfiles({
+    required String token,
+    required int since,
+    required List<SyncProfile> upserts,
+    required List<String> deletes,
+  }) async {
+    final response = await _send(
+      () => _dio.post<Map<String, Object?>>(
+        '$_api/sync/profiles',
+        data: {
+          'since': since,
+          'upserts': [
+            for (final profile in upserts)
+              {
+                'profile_id': profile.id,
+                'label': profile.label,
+                'url': profile.url,
+                'type': profile.type,
+                'content': base64Encode(profile.content),
+                'sort_order': 0,
+              },
+          ],
+          'deletes': deletes,
+        },
+        options: Options(headers: _headers(token)),
+      ),
+    );
+    final result = ProfileSyncResult.fromJson(response.data);
+    if (result == null) {
+      throw const SyncException(SyncFailure.invalidResponse);
+    }
+    return result;
   }
 
   /// Health probe used by the settings page; no token involved.

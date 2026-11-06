@@ -95,27 +95,12 @@ class SyncAccountView extends ConsumerWidget {
           ),
         ],
       ),
-      if (state.conflict != null)
-        generateSection(
-          title: appLocalizations.syncConflict,
-          footer: appLocalizations.syncConflictDesc,
-          items: [
-            FormRow(
-              title: appLocalizations.syncKeepLocal,
-              onPressed: state.busy ? null : () => action.useLocal(),
-            ),
-            FormRow(
-              title: appLocalizations.syncUseRemote,
-              onPressed: state.busy ? null : () => action.useRemote(),
-            ),
-          ],
-        ),
       generateSection(
         items: [
           FormRow(
             leading: const GlyphIcon(AppGlyphs.cloudSync),
             title: appLocalizations.syncNow,
-            onPressed: state.busy ? null : () => action.push(),
+            onPressed: state.busy ? null : () => action.syncNow(),
           ),
           FormRow(
             leading: const GlyphIcon(AppGlyphs.account),
