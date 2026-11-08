@@ -85,7 +85,7 @@ class SyncAccountView extends ConsumerWidget {
           FormRow(
             leading: const GlyphIcon(AppGlyphs.cloudSync),
             title: appLocalizations.syncNow,
-            onPressed: state.busy ? null : () => action.syncNow(),
+            onPressed: state.busy ? null : () => action.refreshCloud(),
           ),
           FormRow(
             leading: const GlyphIcon(AppGlyphs.account),

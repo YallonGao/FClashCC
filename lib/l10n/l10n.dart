@@ -9241,6 +9241,21 @@ class AppLocalizations {
   String get syncReconnect {
     return Intl.message('Reconnect', name: 'syncReconnect', desc: '', args: []);
   }
+
+  /// `Cloud`
+  String get cloudTag {
+    return Intl.message('Cloud', name: 'cloudTag', desc: '', args: []);
+  }
+
+  /// `Upload to cloud`
+  String get uploadToCloud {
+    return Intl.message(
+      'Upload to cloud',
+      name: 'uploadToCloud',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {

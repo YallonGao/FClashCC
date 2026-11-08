@@ -4,6 +4,7 @@ export 'app_update.dart';
 export 'backup.dart';
 export 'changelog.dart';
 export 'cidr.dart';
+export 'cloud_hash.dart';
 export 'compute.dart';
 export 'constant.dart';
 export 'context.dart';

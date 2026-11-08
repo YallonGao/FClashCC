@@ -1098,5 +1098,7 @@
   "syncTestConnection": "测试连接",
   "syncReachable": "服务器可达",
   "syncUnreachable": "连不上服务器，检查地址、端口和防火墙",
-  "syncReconnect": "重新连接"
+  "syncReconnect": "重新连接",
+  "cloudTag": "云",
+  "uploadToCloud": "上传到云端"
 }

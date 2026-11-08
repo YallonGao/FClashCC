@@ -4,6 +4,7 @@ import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/providers.dart';
+import 'package:fl_clash/providers/sync.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
 import 'package:fl_clash/views/profiles/custom/custom.dart';
@@ -484,6 +485,15 @@ class ProfileItem extends ConsumerWidget {
             ),
           ],
         ),
+      if (ref.watch(syncProvider).isSignedIn &&
+          profile.type != ProfileType.custom)
+        PopupMenuItem(
+          glyph: AppGlyphs.cloudSync,
+          label: appLocalizations.uploadToCloud,
+          onPressed: () {
+            ref.read(syncProvider.notifier).uploadProfile(profile);
+          },
+        ),
       PopupMenuItem(
         danger: true,
         glyph: AppGlyphs.delete,
@@ -517,6 +527,9 @@ class ProfileItem extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 8,
             children: [
+              if (profile.type != ProfileType.custom &&
+                  ref.watch(syncProvider).isOnCloud('${profile.id}'))
+                const _CloudChip(),
               if (profile.type == ProfileType.custom)
                 _GroupsCountChip(profileId: profile.id)
               else
@@ -570,6 +583,23 @@ class _ProfileCardTitle extends StatelessWidget {
 }
 
 /// Square-cornered so a lone digit never reads as a second [SelectionBadge].
+class _CloudChip extends StatelessWidget {
+  const _CloudChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    return Tooltip(
+      message: context.appLocalizations.cloudTag,
+      child: TonalChip(
+        label: context.appLocalizations.cloudTag,
+        color: colorScheme.primary.opacity15,
+        foregroundColor: colorScheme.primary,
+      ),
+    );
+  }
+}
+
 class _GroupsCountChip extends ConsumerWidget {
   const _GroupsCountChip({required this.profileId});
 

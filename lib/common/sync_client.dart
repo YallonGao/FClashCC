@@ -301,6 +301,56 @@ class SyncClient {
     return result;
   }
 
+  /// Which of these checksums the cloud already holds.
+  Future<Set<String>> checkCloud(
+    String token, {
+    required String kind,
+    required List<String> checksums,
+  }) async {
+    if (checksums.isEmpty) return const {};
+    final response = await _send(
+      () => _dio.post<Map<String, Object?>>(
+        '$_api/cloud/check',
+        data: {'kind': kind, 'checksums': checksums},
+        options: Options(headers: _headers(token)),
+      ),
+    );
+    final present = response.data?['present'];
+    if (present is! List) {
+      throw const SyncException(SyncFailure.invalidResponse);
+    }
+    return present.whereType<String>().toSet();
+  }
+
+  /// Upload one item. Its id is its checksum, so re-uploading the same content
+  /// is a no-op on the server.
+  Future<void> uploadCloud(
+    String token, {
+    required String kind,
+    required String checksum,
+    required String title,
+    required List<int> content,
+  }) async {
+    await _send(
+      () => _dio.post<Map<String, Object?>>(
+        '$_api/cloud/sync',
+        data: {
+          'since': 0,
+          'uploads': [
+            {
+              'kind': kind,
+              'item_id': checksum,
+              'title': title,
+              'content': base64Encode(content),
+            },
+          ],
+          'holdings': <String, List<String>>{},
+        },
+        options: Options(headers: _headers(token)),
+      ),
+    );
+  }
+
   /// Health probe used by the settings page; no token involved.
   Future<bool> ping() async {
     try {

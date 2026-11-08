@@ -1098,5 +1098,7 @@
   "syncTestConnection": "Test connection",
   "syncReachable": "Server reachable",
   "syncUnreachable": "Cannot reach the server. Check the address, port and firewall.",
-  "syncReconnect": "Reconnect"
+  "syncReconnect": "Reconnect",
+  "cloudTag": "Cloud",
+  "uploadToCloud": "Upload to cloud"
 }

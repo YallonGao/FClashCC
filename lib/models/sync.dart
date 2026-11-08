@@ -136,6 +136,8 @@ class SyncState {
     this.conflict,
     this.error,
     this.remoteRevision,
+    this.profileHashes = const {},
+    this.cloudPresent = const {},
   });
 
   final SyncSession? session;
@@ -151,6 +153,18 @@ class SyncState {
   /// of [session.revision] when another device pushed.
   final int? remoteRevision;
 
+  /// Local profile id -> checksum of its current content.
+  final Map<String, String> profileHashes;
+
+  /// Checksums the cloud reported holding. A profile is on the cloud when its
+  /// hash is in here; content addressing means no id is needed.
+  final Set<String> cloudPresent;
+
+  bool isOnCloud(String? profileId) {
+    final hash = profileId == null ? null : profileHashes[profileId];
+    return hash != null && cloudPresent.contains(hash);
+  }
+
   bool get isSignedIn => session != null;
 
   bool get hasRemoteUpdate =>
@@ -165,6 +179,8 @@ class SyncState {
     SyncConflict? conflict,
     String? error,
     int? remoteRevision,
+    Map<String, String>? profileHashes,
+    Set<String>? cloudPresent,
     bool clearConflict = false,
     bool clearError = false,
     bool clearSession = false,
@@ -176,6 +192,8 @@ class SyncState {
       conflict: clearConflict ? null : (conflict ?? this.conflict),
       error: clearError ? null : (error ?? this.error),
       remoteRevision: remoteRevision ?? this.remoteRevision,
+      profileHashes: profileHashes ?? this.profileHashes,
+      cloudPresent: cloudPresent ?? this.cloudPresent,
     );
   }
 }

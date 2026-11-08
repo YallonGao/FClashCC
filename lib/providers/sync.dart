@@ -7,36 +7,27 @@ import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Keeps this device's subscriptions in step with the account on the server.
+/// Knows which local items the cloud already holds, and uploads on request.
 ///
-/// The unit is one subscription, not one archive: every device sends the rows
-/// it added or changed and the ids it removed, and applies whatever the server
-/// has seen since its last revision. A delete travels as a tombstone, so the
-/// next device that syncs removes the row instead of pushing it back.
+/// Nothing is pushed automatically: the cloud is a place the owner puts things
+/// into, not a mirror of whatever the device happens to have. Presence is
+/// decided by checksum, so a rule or a DNS block needs no id to be compared.
 final syncProvider = NotifierProvider<SyncNotifier, SyncState>(
   SyncNotifier.new,
 );
 
 class SyncNotifier extends Notifier<SyncState> {
-  static const debounce = Duration(seconds: 3);
   static const heartbeatInterval = Duration(minutes: 2);
 
-  Timer? _debounceTimer;
   Timer? _heartbeat;
   SyncClient? _client;
-  bool _applyingRemote = false;
-  bool _syncing = false;
+  bool _busy = false;
 
   @override
   SyncState build() {
     ref.onDispose(() {
-      _debounceTimer?.cancel();
       _heartbeat?.cancel();
       _client?.close();
-    });
-    ref.listen(profilesProvider, (previous, next) {
-      if (previous == null || _applyingRemote) return;
-      _scheduleSync();
     });
     unawaited(_restore());
     return const SyncState();
@@ -47,68 +38,72 @@ class SyncNotifier extends Notifier<SyncState> {
     if (session == null) return;
     _client = SyncClient(baseUrl: session.baseUrl);
     state = state.copyWith(session: session);
-    await syncNow();
+    await refreshCloud();
     if (state.session != null) {
       _startHeartbeat();
     }
   }
 
-  /// The reconnect action on the settings page.
-  Future<void> refreshRemoteState() => syncNow();
-
-  /// One pass in both directions.
-  ///
-  /// The local diff is computed and sent before anything from the server is
-  /// applied: pulling first would overwrite an edit made while offline, and
-  /// the diff that follows would then be empty, losing it for good. The push
-  /// response already carries everything changed since our revision, so one
-  /// call is enough when there is something to send.
-  Future<void> syncNow() async {
+  /// Recomputes local checksums and asks the cloud which of them it has.
+  Future<void> refreshCloud() async {
     final session = state.session;
-    if (session == null || _client == null || _syncing) return;
-    _syncing = true;
+    if (session == null || _client == null || _busy) return;
+    _busy = true;
     state = state.copyWith(busy: true, clearError: true);
     try {
-      final local = await _collectLocal();
-      final snapshot = await preferences.getSyncSnapshot();
-      final plan = planProfileSync(local: local, snapshot: snapshot);
-
-      final result = plan.isEmpty
-          ? await _withAuth(
-              (token) => _client!.pullProfiles(token, session.revision),
-            )
-          : await _withAuth(
-              (token) => _client!.pushProfiles(
-                token: token,
-                since: session.revision,
-                upserts: plan.upserts,
-                deletes: plan.deletes,
-              ),
-            );
-
-      _applyingRemote = true;
-      try {
-        await _applyRemote(result);
-      } finally {
-        _applyingRemote = false;
-      }
-
-      final merged = await _collectLocal();
-      await preferences.saveSyncSnapshot(snapshotOf(merged.values));
-      await _saveSession(
-        state.session!.copyWith(
-          revision: result.revision,
-          lastSyncAt: DateTime.now(),
+      final hashes = await _localHashes();
+      final present = await _withAuth(
+        (token) => _client!.checkCloud(
+          token,
+          kind: 'profile',
+          checksums: hashes.values.toList(),
         ),
       );
-      state = state.copyWith(busy: false, online: true, clearError: true);
+      state = state.copyWith(
+        profileHashes: hashes,
+        cloudPresent: present,
+        busy: false,
+        online: true,
+        clearError: true,
+      );
     } on SyncException catch (error) {
       state = state.copyWith(busy: false);
       _handleFailure(error);
     } catch (error) {
       state = state.copyWith(busy: false, error: compactError(error));
     } finally {
-      _syncing = false;
+      _busy = false;
+    }
+  }
+
+  /// Uploads one profile, content first: its id is its checksum.
+  Future<void> uploadProfile(Profile profile) async {
+    final session = state.session;
+    if (session == null || _client == null) return;
+    final content = await _readProfileBytes(profile.id);
+    final checksum = cloudChecksum(title: profile.label, content: content);
+    state = state.copyWith(busy: true, clearError: true);
+    try {
+      await _withAuth(
+        (token) => _client!.uploadCloud(
+          token,
+          kind: 'profile',
+          checksum: checksum,
+          title: profile.label,
+          content: content,
+        ),
+      );
+      state = state.copyWith(
+        busy: false,
+        online: true,
+        cloudPresent: {...state.cloudPresent, checksum},
+      );
+      await refreshCloud();
+    } on SyncException catch (error) {
+      state = state.copyWith(busy: false);
+      _handleFailure(error);
+    } catch (error) {
+      state = state.copyWith(busy: false, error: compactError(error));
     }
   }
 
@@ -132,22 +127,20 @@ class SyncNotifier extends Notifier<SyncState> {
       );
       _client?.close();
       _client = client;
-      final session = SyncSession(
-        baseUrl: client.baseUrl,
-        username: auth.username,
-        deviceKey: deviceKey,
-        deviceName: _deviceName,
-        deviceId: auth.deviceId,
-        accessToken: auth.accessToken,
-        refreshToken: auth.refreshToken,
+      await _saveSession(
+        SyncSession(
+          baseUrl: client.baseUrl,
+          username: auth.username,
+          deviceKey: deviceKey,
+          deviceName: _deviceName,
+          deviceId: auth.deviceId,
+          accessToken: auth.accessToken,
+          refreshToken: auth.refreshToken,
+        ),
       );
-      await _saveSession(session);
-      await preferences.clearSyncSnapshot();
-      state = state.copyWith(session: session, busy: false, online: true);
+      state = state.copyWith(busy: false, online: true);
       _startHeartbeat();
-      // A fresh login merges whatever this device already had with the
-      // account's copy: nothing local is dropped on the way in.
-      await syncNow();
+      await refreshCloud();
     } on SyncException catch (error) {
       client.close();
       state = state.copyWith(
@@ -159,7 +152,6 @@ class SyncNotifier extends Notifier<SyncState> {
   }
 
   Future<void> signOut() async {
-    _debounceTimer?.cancel();
     _heartbeat?.cancel();
     _client?.close();
     _client = null;
@@ -177,72 +169,31 @@ class SyncNotifier extends Notifier<SyncState> {
     }
   }
 
-  Future<void> _applyRemote(ProfileSyncResult result) async {
-    final profiles = ref.read(profilesProvider.notifier);
-    for (final id in result.tombstones) {
-      final profileId = int.tryParse(id);
-      if (profileId == null) continue;
-      if (ref.read(profilesProvider).getProfile(profileId) != null) {
-        await profiles.del(profileId);
-      }
-    }
-    for (final remote in result.profiles) {
-      final profileId = int.tryParse(remote.id);
-      if (profileId == null) continue;
-      if (remote.content.isNotEmpty) {
-        final path = await appPath.getProfilePath(remote.id);
-        await File(path).safeWriteAsBytes(remote.content);
-      }
-      final type = ProfileType.values.firstWhere(
-        (value) => value.name == remote.type,
-        orElse: () => ProfileType.file,
-      );
-      final existing = ref.read(profilesProvider).getProfile(profileId);
-      final next =
-          (existing ??
-                  Profile(
-                    id: profileId,
-                    type: type,
-                    autoUpdateDuration: defaultUpdateDuration,
-                    lastUpdateDate: DateTime.now(),
-                  ))
-              .copyWith(label: remote.label, url: remote.url, type: type);
-      profiles.put(next);
-    }
-  }
-
-  /// Only subscriptions can travel; a custom profile is compiled from the
-  /// rules and proxies that live in this device's database.
-  Future<Map<String, SyncProfile>> _collectLocal() async {
-    final collected = <String, SyncProfile>{};
+  Future<Map<String, String>> _localHashes() async {
+    final hashes = <String, String>{};
     for (final profile in ref.read(profilesProvider)) {
+      // A custom profile is compiled from local rules and proxies; it has no
+      // single body to compare.
       if (profile.type == ProfileType.custom) continue;
-      final path = await appPath.getProfilePath('${profile.id}');
-      final file = File(path);
-      final content = await file.exists() ? await file.readAsBytes() : <int>[];
-      collected['${profile.id}'] = SyncProfile(
-        id: '${profile.id}',
-        label: profile.label,
-        url: profile.url,
-        type: profile.type.name,
+      final content = await _readProfileBytes(profile.id);
+      hashes['${profile.id}'] = cloudChecksum(
+        title: profile.label,
         content: content,
       );
     }
-    return collected;
+    return hashes;
   }
 
-  void _scheduleSync() {
-    if (!state.isSignedIn) return;
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(debounce, () {
-      unawaited(syncNow());
-    });
+  Future<List<int>> _readProfileBytes(int id) async {
+    final path = await appPath.getProfilePath('$id');
+    final file = File(path);
+    return await file.exists() ? await file.readAsBytes() : const [];
   }
 
   void _startHeartbeat() {
     _heartbeat?.cancel();
     _heartbeat = Timer.periodic(heartbeatInterval, (_) {
-      unawaited(syncNow());
+      unawaited(refreshCloud());
     });
   }
 
