@@ -9247,11 +9247,16 @@ class AppLocalizations {
     return Intl.message('Cloud', name: 'cloudTag', desc: '', args: []);
   }
 
-  /// `Upload to cloud`
+  /// `Upload`
   String get uploadToCloud {
+    return Intl.message('Upload', name: 'uploadToCloud', desc: '', args: []);
+  }
+
+  /// `Last upload`
+  String get syncLastUpload {
     return Intl.message(
-      'Upload to cloud',
-      name: 'uploadToCloud',
+      'Last upload',
+      name: 'syncLastUpload',
       desc: '',
       args: [],
     );

@@ -17,6 +17,7 @@ class SyncSession {
     this.accessExpiresAt,
     this.revision = 0,
     this.lastSyncAt,
+    this.lastUploadAt,
   });
 
   final String baseUrl;
@@ -29,6 +30,7 @@ class SyncSession {
   final DateTime? accessExpiresAt;
   final int revision;
   final DateTime? lastSyncAt;
+  final DateTime? lastUploadAt;
 
   SyncSession copyWith({
     String? baseUrl,
@@ -41,6 +43,7 @@ class SyncSession {
     DateTime? accessExpiresAt,
     int? revision,
     DateTime? lastSyncAt,
+    DateTime? lastUploadAt,
   }) {
     return SyncSession(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -53,6 +56,7 @@ class SyncSession {
       accessExpiresAt: accessExpiresAt ?? this.accessExpiresAt,
       revision: revision ?? this.revision,
       lastSyncAt: lastSyncAt ?? this.lastSyncAt,
+      lastUploadAt: lastUploadAt ?? this.lastUploadAt,
     );
   }
 
@@ -68,6 +72,7 @@ class SyncSession {
       'accessExpiresAt': accessExpiresAt?.toIso8601String(),
       'revision': revision,
       'lastSyncAt': lastSyncAt?.toIso8601String(),
+      'lastUploadAt': lastUploadAt?.toIso8601String(),
     };
   }
 
@@ -97,6 +102,7 @@ class SyncSession {
       accessExpiresAt: _parseDate(json['accessExpiresAt']),
       revision: revision is int ? revision : 0,
       lastSyncAt: _parseDate(json['lastSyncAt']),
+      lastUploadAt: _parseDate(json['lastUploadAt']),
     );
   }
 

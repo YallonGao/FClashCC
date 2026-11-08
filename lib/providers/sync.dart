@@ -93,6 +93,7 @@ class SyncNotifier extends Notifier<SyncState> {
           content: content,
         ),
       );
+      await _saveSession(state.session!.copyWith(lastUploadAt: DateTime.now()));
       state = state.copyWith(
         busy: false,
         online: true,

@@ -48,28 +48,7 @@ class SyncAccountView extends ConsumerWidget {
       if (state.error != null)
         ErrorBanner(message: _failureText(appLocalizations, state.error!)),
       generateSection(
-        title: appLocalizations.syncStatus,
         items: [
-          FormRow(
-            title: appLocalizations.syncStatus,
-            trailing: Text(
-              state.online
-                  ? appLocalizations.syncConnected
-                  : appLocalizations.syncOffline,
-            ),
-          ),
-          FormRow(
-            title: appLocalizations.syncLastSync,
-            trailing: Text(
-              session.lastSyncAt == null
-                  ? appLocalizations.syncNever
-                  : _formatTime(session.lastSyncAt!),
-            ),
-          ),
-          FormRow(
-            title: appLocalizations.syncRevision,
-            trailing: Text('${session.revision}'),
-          ),
           FormRow(
             title: appLocalizations.syncDevice,
             trailing: Text(
@@ -78,15 +57,18 @@ class SyncAccountView extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          FormRow(
+            title: appLocalizations.syncLastUpload,
+            trailing: Text(
+              session.lastUploadAt == null
+                  ? appLocalizations.syncNever
+                  : _formatTime(session.lastUploadAt!),
+            ),
+          ),
         ],
       ),
       generateSection(
         items: [
-          FormRow(
-            leading: const GlyphIcon(AppGlyphs.cloudSync),
-            title: appLocalizations.syncNow,
-            onPressed: state.busy ? null : () => action.refreshCloud(),
-          ),
           FormRow(
             leading: const GlyphIcon(AppGlyphs.account),
             title: appLocalizations.syncSignOut,

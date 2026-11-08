@@ -1100,5 +1100,6 @@
   "syncUnreachable": "连不上服务器，检查地址、端口和防火墙",
   "syncReconnect": "重新连接",
   "cloudTag": "云",
-  "uploadToCloud": "上传到云端"
+  "uploadToCloud": "上云",
+  "syncLastUpload": "上次上传"
 }

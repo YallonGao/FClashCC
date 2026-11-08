@@ -51,11 +51,11 @@ class _ToolViewState extends ConsumerState<ToolsView> {
     return generateSection(
       title: context.appLocalizations.settings,
       items: [
+        const _SyncAccountItem(),
         const _LocaleItem(),
         const _ThemeItem(),
         if (system.isDesktop) const _HotkeyItem(),
         if (system.isAndroid) const _AccessItem(),
-        const _SyncAccountItem(),
         const _BackupItem(),
         const _AdvancedConfigItem(),
         const _GeneralItem(),

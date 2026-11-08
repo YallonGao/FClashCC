@@ -1100,5 +1100,6 @@
   "syncUnreachable": "Cannot reach the server. Check the address, port and firewall.",
   "syncReconnect": "Reconnect",
   "cloudTag": "Cloud",
-  "uploadToCloud": "Upload to cloud"
+  "uploadToCloud": "Upload",
+  "syncLastUpload": "Last upload"
 }
