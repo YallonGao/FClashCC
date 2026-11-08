@@ -10,8 +10,10 @@ import 'package:fl_clash/pages/editor.dart';
 import 'package:fl_clash/providers/action.dart';
 import 'package:fl_clash/providers/app.dart';
 import 'package:fl_clash/providers/database.dart';
+import 'package:fl_clash/providers/sync.dart';
 import 'package:fl_clash/state.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
+import 'package:fl_clash/views/cloud/cloud_picker.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -172,6 +174,12 @@ class _ScriptsViewState extends ConsumerState<ScriptsView> {
       () => _scriptsAction.updateScript(script),
       title: script.label,
     );
+  }
+
+  Future<void> _handlePickFromCloud() async {
+    final item = await showCloudPicker(kind: 'script');
+    if (item == null) return;
+    await ref.read(syncProvider.notifier).addFromCloud(item);
   }
 
   List<Script> get _scripts => ref.read(scriptsProvider).value ?? [];
@@ -359,6 +367,12 @@ class _ScriptsViewState extends ConsumerState<ScriptsView> {
                 label: appLocalizations.importFile,
                 onPressed: _handleImportFromFile,
               ),
+              if (ref.watch(syncProvider).isSignedIn)
+                PopupMenuItem(
+                  glyph: AppGlyphs.cloudSync,
+                  label: appLocalizations.pickFromCloud,
+                  onPressed: _handlePickFromCloud,
+                ),
             ],
           ),
         ),

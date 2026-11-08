@@ -1101,5 +1101,7 @@
   "syncReconnect": "Reconnect",
   "cloudTag": "Cloud",
   "uploadToCloud": "Upload",
-  "syncLastUpload": "Last upload"
+  "syncLastUpload": "Last upload",
+  "pickFromCloud": "Pick from cloud",
+  "cloudEmpty": "Nothing of this kind in the cloud yet"
 }

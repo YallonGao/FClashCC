@@ -5,7 +5,9 @@ import 'package:fl_clash/features/form/form.dart';
 import 'package:fl_clash/pages/scan.dart';
 import 'package:fl_clash/plugins/app.dart';
 import 'package:fl_clash/providers/providers.dart';
+import 'package:fl_clash/providers/sync.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
+import 'package:fl_clash/views/cloud/cloud_picker.dart';
 import 'package:fl_clash/views/profiles/custom/custom.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/widgets.dart';
@@ -124,6 +126,12 @@ class AddProfileMenu extends ConsumerWidget {
     );
   }
 
+  Future<void> _toPickFromCloud(WidgetRef ref) async {
+    final item = await showCloudPicker(kind: 'profile');
+    if (item == null) return;
+    await ref.read(syncProvider.notifier).addFromCloud(item);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appLocalizations = context.appLocalizations;
@@ -146,6 +154,12 @@ class AddProfileMenu extends ConsumerWidget {
             label: appLocalizations.link,
             onPressed: () => _toAdd(context, ref),
           ),
+          if (ref.watch(syncProvider).isSignedIn)
+            PopupMenuItem(
+              glyph: AppGlyphs.cloudSync,
+              label: appLocalizations.pickFromCloud,
+              onPressed: () => _toPickFromCloud(ref),
+            ),
           if (system.isTV)
             PopupMenuItem(
               glyph: AppGlyphs.devices,

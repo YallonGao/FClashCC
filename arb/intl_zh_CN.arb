@@ -1101,5 +1101,7 @@
   "syncReconnect": "重新连接",
   "cloudTag": "云",
   "uploadToCloud": "上云",
-  "syncLastUpload": "上次上传"
+  "syncLastUpload": "上次上传",
+  "pickFromCloud": "从云端选择",
+  "cloudEmpty": "云端还没有这类内容"
 }

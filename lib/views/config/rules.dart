@@ -2,7 +2,9 @@ import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/features/features.dart';
 import 'package:fl_clash/models/clash_config.dart';
 import 'package:fl_clash/providers/providers.dart';
+import 'package:fl_clash/providers/sync.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
+import 'package:fl_clash/views/cloud/cloud_picker.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +51,12 @@ class _AddedRulesViewState extends ConsumerState<AddedRulesView> {
         onAdd: (rules) => ref.read(globalRulesProvider.notifier).putAll(rules),
       ),
     );
+  }
+
+  Future<void> _handlePickFromCloud() async {
+    final item = await showCloudPicker(kind: 'rule');
+    if (item == null) return;
+    await ref.read(syncProvider.notifier).addFromCloud(item);
   }
 
   void _handleSelected(int ruleId) {
@@ -135,6 +143,12 @@ class _AddedRulesViewState extends ConsumerState<AddedRulesView> {
               glyph: AppGlyphs.rulePresets,
               onPressed: _handleQuickActions,
               tooltip: appLocalizations.quickActions,
+            ),
+          if (!isSelecting && ref.watch(syncProvider).isSignedIn)
+            IconButtonData(
+              glyph: AppGlyphs.cloudSync,
+              onPressed: _handlePickFromCloud,
+              tooltip: appLocalizations.pickFromCloud,
             ),
         ],
         selectionActions: isSelecting ? selectionActions : const [],

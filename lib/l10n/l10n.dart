@@ -9261,6 +9261,26 @@ class AppLocalizations {
       args: [],
     );
   }
+
+  /// `Pick from cloud`
+  String get pickFromCloud {
+    return Intl.message(
+      'Pick from cloud',
+      name: 'pickFromCloud',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nothing of this kind in the cloud yet`
+  String get cloudEmpty {
+    return Intl.message(
+      'Nothing of this kind in the cloud yet',
+      name: 'cloudEmpty',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {

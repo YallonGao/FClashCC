@@ -497,6 +497,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "closeConnections": MessageLookupByLibrary.simpleMessage(
       "Close connections",
     ),
+    "cloudEmpty": MessageLookupByLibrary.simpleMessage(
+      "Nothing of this kind in the cloud yet",
+    ),
     "cloudTag": MessageLookupByLibrary.simpleMessage("Cloud"),
     "color": MessageLookupByLibrary.simpleMessage("Color"),
     "colorStyle": MessageLookupByLibrary.simpleMessage("Color style"),
@@ -1508,6 +1511,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "paste": MessageLookupByLibrary.simpleMessage("Paste"),
     "peers": MessageLookupByLibrary.simpleMessage("Peers"),
     "pickFromAlbum": MessageLookupByLibrary.simpleMessage("Choose from album"),
+    "pickFromCloud": MessageLookupByLibrary.simpleMessage("Pick from cloud"),
     "pinWindow": MessageLookupByLibrary.simpleMessage("Pin window"),
     "pleaseBindWebDAV": MessageLookupByLibrary.simpleMessage(
       "Please bind WebDAV",
