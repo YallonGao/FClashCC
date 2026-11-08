@@ -157,7 +157,6 @@ class SyncNotifier extends Notifier<SyncState> {
     _client?.close();
     _client = null;
     await preferences.clearSyncSession();
-    await preferences.clearSyncSnapshot();
     state = const SyncState();
   }
 

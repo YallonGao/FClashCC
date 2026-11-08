@@ -87,34 +87,6 @@ class Preferences {
     await preferences?.setString(syncSessionKey, json.encode(map));
   }
 
-  Future<Map<String, String>> getSyncSnapshot() async {
-    final preferences = await _store.value;
-    final raw = preferences?.getString(syncSnapshotKey);
-    if (raw == null || raw.isEmpty) return {};
-    try {
-      final decoded = json.decode(raw);
-      if (decoded is Map) {
-        return {
-          for (final entry in decoded.entries)
-            if (entry.value is String) '${entry.key}': entry.value as String,
-        };
-      }
-    } catch (_) {
-      return {};
-    }
-    return {};
-  }
-
-  Future<void> saveSyncSnapshot(Map<String, String> snapshot) async {
-    final preferences = await _store.value;
-    await preferences?.setString(syncSnapshotKey, json.encode(snapshot));
-  }
-
-  Future<void> clearSyncSnapshot() async {
-    final preferences = await _store.value;
-    await preferences?.remove(syncSnapshotKey);
-  }
-
   Future<void> clearSyncSession() async {
     final preferences = await _store.value;
     await preferences?.remove(syncSessionKey);

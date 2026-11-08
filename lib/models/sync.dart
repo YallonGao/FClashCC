@@ -121,49 +121,27 @@ class SyncSession {
   }
 }
 
-/// A push was refused because the server had moved on.
-class SyncConflict {
-  const SyncConflict({
-    required this.remoteRevision,
-    required this.localRevision,
-    this.remoteChecksum = '',
-  });
-
-  final int remoteRevision;
-  final int localRevision;
-  final String remoteChecksum;
-}
-
 class SyncState {
   const SyncState({
     this.session,
     this.online = false,
     this.busy = false,
-    this.conflict,
     this.error,
-    this.remoteRevision,
     this.profileHashes = const {},
     this.cloudPresent = const {},
   });
 
   final SyncSession? session;
 
-  /// Whether the last request reached the server. A signed-in account that
-  /// cannot reach it is read-only, which is the rule this feature exists for.
+  /// Whether the last request reached the server.
   final bool online;
   final bool busy;
-  final SyncConflict? conflict;
   final String? error;
-
-  /// The server's revision as of the last successful call, which can be ahead
-  /// of [session.revision] when another device pushed.
-  final int? remoteRevision;
 
   /// Local profile id -> checksum of its current content.
   final Map<String, String> profileHashes;
 
-  /// Checksums the cloud reported holding. A profile is on the cloud when its
-  /// hash is in here; content addressing means no id is needed.
+  /// Checksums the cloud reported holding.
   final Set<String> cloudPresent;
 
   bool isOnCloud(String? profileId) {
@@ -173,21 +151,13 @@ class SyncState {
 
   bool get isSignedIn => session != null;
 
-  bool get hasRemoteUpdate =>
-      session != null &&
-      remoteRevision != null &&
-      remoteRevision! > session!.revision;
-
   SyncState copyWith({
     SyncSession? session,
     bool? online,
     bool? busy,
-    SyncConflict? conflict,
     String? error,
-    int? remoteRevision,
     Map<String, String>? profileHashes,
     Set<String>? cloudPresent,
-    bool clearConflict = false,
     bool clearError = false,
     bool clearSession = false,
   }) {
@@ -195,9 +165,7 @@ class SyncState {
       session: clearSession ? null : (session ?? this.session),
       online: online ?? this.online,
       busy: busy ?? this.busy,
-      conflict: clearConflict ? null : (conflict ?? this.conflict),
       error: clearError ? null : (error ?? this.error),
-      remoteRevision: remoteRevision ?? this.remoteRevision,
       profileHashes: profileHashes ?? this.profileHashes,
       cloudPresent: cloudPresent ?? this.cloudPresent,
     );

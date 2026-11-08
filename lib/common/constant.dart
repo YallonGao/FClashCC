@@ -128,7 +128,6 @@ const configKey = 'config';
 const systemDnsRecordKey = 'system_dns_record';
 const bootRecordKey = 'boot_record';
 const appliedConfigMd5Key = 'applied_config_md5';
-const syncSnapshotKey = 'sync_snapshot';
 const syncSessionKey = 'sync_session';
 const syncDeviceKey = 'sync_device_key';
 const defaultSystemDnsFallback = '223.5.5.5';
