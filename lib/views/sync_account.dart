@@ -47,21 +47,6 @@ class SyncAccountView extends ConsumerWidget {
     return [
       if (state.error != null)
         ErrorBanner(message: _failureText(appLocalizations, state.error!)),
-      if (state.isReadOnly)
-        generateSection(
-          items: [
-            FormRow(
-              leading: const GlyphIcon(AppGlyphs.cloudSync),
-              title: appLocalizations.syncReadOnly,
-              titleStyle: TextStyle(color: context.colorScheme.error),
-            ),
-            FormRow(
-              leading: const GlyphIcon(AppGlyphs.connections),
-              title: appLocalizations.syncReconnect,
-              onPressed: state.busy ? null : action.refreshRemoteState,
-            ),
-          ],
-        ),
       generateSection(
         title: appLocalizations.syncStatus,
         items: [

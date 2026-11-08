@@ -47,9 +47,6 @@ class SyncNotifier extends Notifier<SyncState> {
     if (session == null) return;
     _client = SyncClient(baseUrl: session.baseUrl);
     state = state.copyWith(session: session);
-    // Until the server answers, a local edit could be one the other devices
-    // never see, so the gate starts closed.
-    SyncGuard.setReadOnly(true);
     await syncNow();
     if (state.session != null) {
       _startHeartbeat();
@@ -105,7 +102,6 @@ class SyncNotifier extends Notifier<SyncState> {
         ),
       );
       state = state.copyWith(busy: false, online: true, clearError: true);
-      SyncGuard.setReadOnly(false);
     } on SyncException catch (error) {
       state = state.copyWith(busy: false);
       _handleFailure(error);
@@ -148,7 +144,6 @@ class SyncNotifier extends Notifier<SyncState> {
       await _saveSession(session);
       await preferences.clearSyncSnapshot();
       state = state.copyWith(session: session, busy: false, online: true);
-      SyncGuard.setReadOnly(false);
       _startHeartbeat();
       // A fresh login merges whatever this device already had with the
       // account's copy: nothing local is dropped on the way in.
@@ -160,7 +155,6 @@ class SyncNotifier extends Notifier<SyncState> {
         online: false,
         error: error.failure.name,
       );
-      SyncGuard.setReadOnly(false);
     }
   }
 
@@ -171,7 +165,6 @@ class SyncNotifier extends Notifier<SyncState> {
     _client = null;
     await preferences.clearSyncSession();
     await preferences.clearSyncSnapshot();
-    SyncGuard.setReadOnly(false);
     state = const SyncState();
   }
 
@@ -190,7 +183,7 @@ class SyncNotifier extends Notifier<SyncState> {
       final profileId = int.tryParse(id);
       if (profileId == null) continue;
       if (ref.read(profilesProvider).getProfile(profileId) != null) {
-        await profiles.del(profileId, force: true);
+        await profiles.del(profileId);
       }
     }
     for (final remote in result.profiles) {
@@ -214,7 +207,7 @@ class SyncNotifier extends Notifier<SyncState> {
                     lastUpdateDate: DateTime.now(),
                   ))
               .copyWith(label: remote.label, url: remote.url, type: type);
-      profiles.put(next, force: true);
+      profiles.put(next);
     }
   }
 
@@ -257,10 +250,8 @@ class SyncNotifier extends Notifier<SyncState> {
     switch (error.failure) {
       case SyncFailure.offline:
         state = state.copyWith(online: false, error: error.failure.name);
-        SyncGuard.setReadOnly(true);
       case SyncFailure.unauthorized:
         state = state.copyWith(online: false, error: error.failure.name);
-        SyncGuard.setReadOnly(true);
       default:
         state = state.copyWith(online: true, error: error.failure.name);
     }

@@ -47,7 +47,6 @@ export 'search.dart';
 export 'snowflake.dart';
 export 'string.dart';
 export 'sync_client.dart';
-export 'sync_guard.dart';
 export 'system.dart';
 export 'system_fonts.dart';
 export 'task.dart';

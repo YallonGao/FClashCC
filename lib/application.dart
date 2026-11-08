@@ -62,7 +62,6 @@ class Application extends ConsumerStatefulWidget {
 class ApplicationState extends ConsumerState<Application> {
   Timer? _autoUpdateProfilesTaskTimer;
   bool _preHasVpn = false;
-  DateTime? _lastReadOnlyTip;
   // Windows can only watch SIGINT and SIGHUP.
   final _terminateSignals = system.isDesktop && !system.isWindows
       ? ProcessSignal.sigterm.watch()
@@ -72,7 +71,6 @@ class ApplicationState extends ConsumerState<Application> {
   void initState() {
     super.initState();
     SystemNavigator.setFrameworkHandlesBack(true);
-    SyncGuard.blocked.addListener(_showReadOnlyTip);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       if (globalState.navigatorKey.currentContext != null) {
         await bootstrap.attach();
@@ -204,26 +202,9 @@ class ApplicationState extends ConsumerState<Application> {
     );
   }
 
-  /// A refused write is otherwise silent: the toggle moves back and nothing
-  /// says why. One tip every few seconds is enough to explain it.
-  void _showReadOnlyTip() {
-    final now = DateTime.now();
-    final last = _lastReadOnlyTip;
-    if (last != null && now.difference(last) < const Duration(seconds: 3)) {
-      return;
-    }
-    _lastReadOnlyTip = now;
-    unawaited(
-      dialogs.showAlert(
-        message: TextSpan(text: currentAppLocalizations.syncReadOnly),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     linkManager.destroy();
-    SyncGuard.blocked.removeListener(_showReadOnlyTip);
     _autoUpdateProfilesTaskTimer?.cancel();
     super.dispose();
   }

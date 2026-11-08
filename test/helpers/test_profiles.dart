@@ -10,7 +10,7 @@ class TestProfiles extends Profiles {
   List<Profile> build() => initial;
 
   @override
-  void put(Profile profile, {bool force = false}) {
+  void put(Profile profile) {
     final next = List<Profile>.from(state);
     final index = next.indexWhere((item) => item.id == profile.id);
     if (index == -1) {
@@ -22,7 +22,7 @@ class TestProfiles extends Profiles {
   }
 
   @override
-  Future<void> del(int id, {bool force = false}) async {
+  Future<void> del(int id) async {
     state = state.where((profile) => profile.id != id).toList();
   }
 

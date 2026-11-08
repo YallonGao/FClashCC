@@ -153,8 +153,6 @@ class SyncState {
 
   bool get isSignedIn => session != null;
 
-  bool get isReadOnly => isSignedIn && !online;
-
   bool get hasRemoteUpdate =>
       session != null &&
       remoteRevision != null &&
