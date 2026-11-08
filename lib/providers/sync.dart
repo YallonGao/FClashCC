@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:fl_clash/common/common.dart';
@@ -106,6 +107,109 @@ class SyncNotifier extends Notifier<SyncState> {
     } catch (error) {
       state = state.copyWith(busy: false, error: compactError(error));
     }
+  }
+
+  Future<List<CloudItem>> listCloud(String kind) async {
+    final session = state.session;
+    if (session == null || _client == null) return const [];
+    try {
+      return await _withAuth((token) => _client!.listCloud(token, kind: kind));
+    } on SyncException catch (error) {
+      _handleFailure(error);
+      return const [];
+    }
+  }
+
+  /// Writes one cloud item back into this device's own storage.
+  Future<void> addFromCloud(CloudItem item) async {
+    switch (item.kind) {
+      case 'profile':
+        await _addProfileFromCloud(item);
+      case 'rule':
+        await _addRuleFromCloud(item);
+      case 'script':
+        await _addScriptFromCloud(item);
+    }
+  }
+
+  Future<void> uploadItem({
+    required String kind,
+    required String title,
+    required List<int> content,
+  }) async {
+    final session = state.session;
+    if (session == null || _client == null) return;
+    final checksum = cloudChecksum(title: title, content: content);
+    state = state.copyWith(busy: true, clearError: true);
+    try {
+      await _withAuth(
+        (token) => _client!.uploadCloud(
+          token,
+          kind: kind,
+          checksum: checksum,
+          title: title,
+          content: content,
+        ),
+      );
+      await _saveSession(state.session!.copyWith(lastUploadAt: DateTime.now()));
+      state = state.copyWith(busy: false, online: true);
+      if (kind == 'profile') {
+        await refreshCloud();
+      }
+    } on SyncException catch (error) {
+      state = state.copyWith(busy: false);
+      _handleFailure(error);
+    }
+  }
+
+  Future<void> _addProfileFromCloud(CloudItem item) async {
+    final id = snowflake.id;
+    final path = await appPath.getProfilePath('$id');
+    await File(path).safeWriteAsBytes(item.content);
+    ref
+        .read(profilesProvider.notifier)
+        .put(
+          Profile(
+            id: id,
+            type: ProfileType.file,
+            label: item.title,
+            autoUpdateDuration: defaultUpdateDuration,
+            lastUpdateDate: DateTime.now(),
+          ),
+        );
+  }
+
+  Future<void> _addRuleFromCloud(CloudItem item) async {
+    final decoded = json.decode(utf8.decode(item.content));
+    if (decoded is! Map<String, Object?>) return;
+    final rule = Rule.fromJson(decoded);
+    ref.read(globalRulesProvider.notifier).put(rule.copyWith(id: snowflake.id));
+  }
+
+  Future<void> _addScriptFromCloud(CloudItem item) async {
+    final id = snowflake.id;
+    final path = await appPath.getScriptPath('$id');
+    await File(path).safeWriteAsBytes(item.content);
+    ref
+        .read(scriptsProvider.notifier)
+        .put(Script(id: id, label: item.title, lastUpdateTime: DateTime.now()));
+  }
+
+  Future<void> uploadRule(Rule rule) {
+    return uploadItem(
+      kind: 'rule',
+      title: rule.content ?? '${rule.ruleAction.name} ${rule.id}',
+      content: utf8.encode(json.encode(rule.toJson())),
+    );
+  }
+
+  Future<void> uploadScript(Script script) async {
+    final path = await appPath.getScriptPath('${script.id}');
+    final file = File(path);
+    final content = await file.exists()
+        ? await file.readAsBytes()
+        : const <int>[];
+    await uploadItem(kind: 'script', title: script.label, content: content);
   }
 
   Future<void> signIn({

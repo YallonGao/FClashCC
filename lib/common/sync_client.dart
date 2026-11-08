@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:fl_clash/models/cloud_item.dart';
 
 /// What went wrong, in terms the UI can act on.
 enum SyncFailure {
@@ -248,6 +249,34 @@ class SyncClient {
     }
     await File(destinationPath).writeAsBytes(bytes, flush: true);
     return int.tryParse(response.headers.value('X-Revision') ?? '') ?? 0;
+  }
+
+  /// Every item of one kind, with its body, for the picker.
+  Future<List<CloudItem>> listCloud(
+    String token, {
+    required String kind,
+  }) async {
+    final response = await _send(
+      () => _dio.post<Map<String, Object?>>(
+        '$_api/cloud/sync',
+        data: {
+          'since': 0,
+          'uploads': <Object>[],
+          'holdings': <String, List<String>>{},
+        },
+        options: Options(headers: _headers(token)),
+      ),
+    );
+    final raw = response.data?['items'];
+    if (raw is! List) {
+      throw const SyncException(SyncFailure.invalidResponse);
+    }
+    return [
+      for (final item in raw)
+        if (item is Map<String, Object?>)
+          if (CloudItem.fromJson(item) case final parsed?)
+            if (parsed.kind == kind) parsed,
+    ];
   }
 
   /// Which of these checksums the cloud already holds.
