@@ -9,7 +9,6 @@ import 'package:fl_clash/views/access.dart';
 import 'package:fl_clash/views/backup_and_restore.dart';
 import 'package:fl_clash/views/config/general.dart';
 import 'package:fl_clash/views/hotkey.dart';
-import 'package:fl_clash/views/sync_account.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +50,6 @@ class _ToolViewState extends ConsumerState<ToolsView> {
     return generateSection(
       title: context.appLocalizations.settings,
       items: [
-        const _SyncAccountItem(),
         const _LocaleItem(),
         const _ThemeItem(),
         if (system.isDesktop) const _HotkeyItem(),
@@ -153,19 +151,6 @@ class _BackupItem extends StatelessWidget {
       leading: const GlyphIcon(AppGlyphs.cloudSync),
       title: Text(context.appLocalizations.backupAndRestore),
       widget: const BackupAndRestore(),
-    );
-  }
-}
-
-class _SyncAccountItem extends StatelessWidget {
-  const _SyncAccountItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListItem.open(
-      leading: const GlyphIcon(AppGlyphs.account),
-      title: Text(context.appLocalizations.syncAndAccount),
-      widget: const SyncAccountView(),
     );
   }
 }
