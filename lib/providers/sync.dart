@@ -212,6 +212,46 @@ class SyncNotifier extends Notifier<SyncState> {
     await uploadItem(kind: 'script', title: script.label, content: content);
   }
 
+  /// Uploads everything this device holds of one kind, so one tap on a fresh
+  /// device fills the cloud. The server keys items by content hash, so
+  /// re-uploading the same bytes costs one round trip and changes nothing.
+  Future<void> uploadAll(String kind) async {
+    switch (kind) {
+      case 'profile':
+        for (final profile in ref.read(profilesProvider)) {
+          await uploadProfile(profile);
+        }
+      case 'rule':
+        for (final rule
+            in ref.read(globalRulesProvider).value ?? const <Rule>[]) {
+          await uploadRule(rule);
+        }
+      case 'script':
+        for (final script
+            in ref.read(scriptsProvider).value ?? const <Script>[]) {
+          await uploadScript(script);
+        }
+    }
+  }
+
+  /// Drops one cloud copy. The local item is untouched.
+  Future<bool> deleteCloudItem({
+    required String kind,
+    required String itemId,
+  }) async {
+    final session = state.session;
+    if (session == null || _client == null) return false;
+    try {
+      await _withAuth(
+        (token) => _client!.deleteCloud(token, kind: kind, itemId: itemId),
+      );
+      return true;
+    } on SyncException catch (error) {
+      _handleFailure(error);
+      return false;
+    }
+  }
+
   Future<void> signIn({
     required String baseUrl,
     required String username,

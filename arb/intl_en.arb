@@ -1103,5 +1103,8 @@
   "uploadToCloud": "Upload",
   "syncLastUpload": "Last upload",
   "pickFromCloud": "Pick from cloud",
-  "cloudEmpty": "Nothing of this kind in the cloud yet"
+  "cloudEmpty": "Nothing of this kind in the cloud yet",
+  "cloudData": "Cloud data",
+  "cloudUploadAll": "Upload this device's {kind} to the cloud?",
+  "syncOptional": "An account is optional. Everything works offline; the cloud only adds a place to keep copies."
 }

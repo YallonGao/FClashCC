@@ -1103,5 +1103,8 @@
   "uploadToCloud": "上云",
   "syncLastUpload": "上次上传",
   "pickFromCloud": "从云端选择",
-  "cloudEmpty": "云端还没有这类内容"
+  "cloudEmpty": "云端还没有这类内容",
+  "cloudData": "云端数据",
+  "cloudUploadAll": "把本机的{kind}全部上传到云端？",
+  "syncOptional": "账号是可选的。所有功能离线可用，云端只是多一个存放副本的地方。"
 }

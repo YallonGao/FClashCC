@@ -329,6 +329,20 @@ class SyncClient {
     );
   }
 
+  /// Deletes one cloud item. Its id is the checksum it was uploaded under.
+  Future<void> deleteCloud(
+    String token, {
+    required String kind,
+    required String itemId,
+  }) async {
+    await _send(
+      () => _dio.delete<void>(
+        '$_api/cloud/items/$kind/$itemId',
+        options: Options(headers: _headers(token)),
+      ),
+    );
+  }
+
   /// Health probe used by the settings page; no token involved.
   Future<bool> ping() async {
     try {

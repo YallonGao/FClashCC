@@ -9281,6 +9281,31 @@ class AppLocalizations {
       args: [],
     );
   }
+
+  /// `Cloud data`
+  String get cloudData {
+    return Intl.message('Cloud data', name: 'cloudData', desc: '', args: []);
+  }
+
+  /// `Upload this device's {kind} to the cloud?`
+  String cloudUploadAll(Object kind) {
+    return Intl.message(
+      'Upload this device\'s $kind to the cloud?',
+      name: 'cloudUploadAll',
+      desc: '',
+      args: [kind],
+    );
+  }
+
+  /// `An account is optional. Everything works offline; the cloud only adds a place to keep copies.`
+  String get syncOptional {
+    return Intl.message(
+      'An account is optional. Everything works offline; the cloud only adds a place to keep copies.',
+      name: 'syncOptional',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<AppLocalizations> {

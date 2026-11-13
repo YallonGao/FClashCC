@@ -7,6 +7,7 @@ import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/providers/sync.dart';
 import 'package:fl_clash/ui/icons/icons.dart';
 import 'package:fl_clash/ui/ui.dart';
+import 'package:fl_clash/views/cloud/cloud_data.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -47,6 +48,17 @@ class SyncAccountView extends ConsumerWidget {
     return [
       if (state.error != null)
         ErrorBanner(message: _failureText(appLocalizations, state.error!)),
+      generateSection(
+        title: appLocalizations.cloudData,
+        items: [
+          for (final kind in const ['profile', 'rule', 'script'])
+            ListItem.open(
+              leading: GlyphIcon(cloudKindGlyph(kind)),
+              title: Text(cloudKindLabel(appLocalizations, kind)),
+              widget: CloudDataView(kind: kind),
+            ),
+        ],
+      ),
       generateSection(
         items: [
           FormRow(
@@ -158,6 +170,13 @@ class _SignInFormState extends ConsumerState<_SignInForm> {
     final busy = state.busy;
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Text(
+            appLocalizations.syncOptional,
+            style: AppTextStyle.caption1.of(context).toLighter,
+          ),
+        ),
         ErrorBanner(
           message:
               _issue ??
